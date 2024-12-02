@@ -40,7 +40,7 @@
     "rate-limiter-flexible": "^2.4.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "remix-utils": "^6.5.0",
+    "remix-utils": "^6.6.0",
     "remix-validated-form": "^4.6.11",
     "zod": "^3.21.4",
     "zustand": "^4.3.8"
