@@ -11,6 +11,7 @@ export type S3StorageOptions = {
   storageBaseURL: string;
   basePath?: string;
   storage: Minio.ClientOptions;
+  defaultAcl?: string;
 };
 
 const EXTENSION_TO_MIME_TYPE: Record<string, string> = {
@@ -26,10 +27,11 @@ export type UploadResponse = Minio.UploadedObjectInfo & {
 };
 
 export function storage() {
-  const storageOptions = {
+  const storageOptions: S3StorageOptions = {
     bucket: env.require("S3_BUCKET"),
     basePath: env.get("S3_BASE_PATH"),
     storageBaseURL: env.require("S3_STORAGE_BASE_URL"),
+    defaultAcl: env.require("S3_DEFAULT_ACL"),
     storage: {
       endPoint: env.require("S3_ENDPOINT"),
       port: Number(env.get("S3_PORT")) || undefined,
@@ -50,12 +52,14 @@ export default class S3Storage {
   private bucket: string;
   private storageBaseURL: string;
   private basePath?: string;
+  private defaultAcl?: string;
 
   constructor(options: S3StorageOptions) {
     this.minioClient = new Minio.Client(options.storage);
     this.bucket = options.bucket;
     this.basePath = options.basePath;
     this.storageBaseURL = options.storageBaseURL;
+    this.defaultAcl = options.defaultAcl;
   }
 
   async exists(filename: string): Promise<boolean> {
@@ -76,6 +80,7 @@ export default class S3Storage {
     const metaData = {
       "Content-Type": EXTENSION_TO_MIME_TYPE[path.extname(filename).slice(1)],
       "Cache-Control": "max-age=86400",
+      ...(this.defaultAcl ? {"x-amz-acl": this.defaultAcl} : {})
     };
 
     const [data, hash] = await Promise.all([
@@ -131,7 +136,7 @@ export default class S3Storage {
             }
           }
         });
-        stream.on("end", () => resolve(Buffer.concat(chunks)));
+        stream.on("end", () => resolve(Buffer.concat(chunks as never)));
         stream.on("error", reject);
       });
     });
