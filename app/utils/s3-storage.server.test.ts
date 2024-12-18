@@ -29,6 +29,7 @@ describe("S3Storage", () => {
       bucket: "test-bucket",
       storageBaseURL: "https://test-bucket.s3.amazonaws.com",
       basePath: "test-base-path",
+      defaultAcl: "fake-acl",
       storage: {
         endPoint: "s3.amazonaws.com",
         useSSL: true,
@@ -70,6 +71,7 @@ describe("S3Storage", () => {
         {
           "Content-Type": "image/jpeg",
           "Cache-Control": "max-age=86400",
+          "x-amz-acl": "fake-acl"
         }
       );
     });
@@ -84,6 +86,7 @@ describe("S3Storage", () => {
         {
           "Content-Type": "image/jpeg",
           "Cache-Control": "max-age=86400",
+          "x-amz-acl": "fake-acl"
         }
       );
     });
@@ -108,6 +111,77 @@ describe("S3Storage", () => {
       });
       const url = "https://test-bucket.s3.amazonaws.com/test.jpg";
       expect(fileStorage.getFilenameFromURL(url)).toBe("test.jpg");
+    });
+  });
+
+
+  describe("ACL options", () => {
+
+    let buffer: Buffer;
+    let filename: string;
+
+    beforeEach(() => {
+      fileStorage.getHash = jest.fn().mockReturnValue("test-hash");
+      buffer = Buffer.from("test");
+      filename = "test.jpg";
+    });
+
+
+    it("sets metaData with ACL", async () => {
+      storageOptions = {
+        bucket: "test-bucket",
+        storageBaseURL: "https://test-bucket.s3.amazonaws.com",
+        basePath: "test-base-path",
+        defaultAcl: "fake-acl-foobar",
+        storage: {
+          endPoint: "s3.amazonaws.com",
+          useSSL: true,
+          accessKey: "test-access-key",
+          secretKey: "test-secret-key",
+        },
+      };
+      fileStorage = new S3Storage(storageOptions);
+
+      await fileStorage.upload(buffer, filename);
+      expect(Minio.Client.prototype.putObject).toHaveBeenCalledWith(
+        "test-bucket",
+        "test-base-path/test.jpg",
+        buffer,
+        buffer.length,
+        {
+          "Content-Type": "image/jpeg",
+          "Cache-Control": "max-age=86400",
+          "x-amz-acl": "fake-acl-foobar"
+        }
+      );
+    });
+
+    it("sets metaData without ACL", async () => {
+      storageOptions = {
+        bucket: "test-bucket",
+        storageBaseURL: "https://test-bucket.s3.amazonaws.com",
+        basePath: "test-base-path",
+        defaultAcl: undefined,
+        storage: {
+          endPoint: "s3.amazonaws.com",
+          useSSL: true,
+          accessKey: "test-access-key",
+          secretKey: "test-secret-key",
+        },
+      };
+      fileStorage = new S3Storage(storageOptions);
+
+      await fileStorage.upload(buffer, filename);
+      expect(Minio.Client.prototype.putObject).toHaveBeenCalledWith(
+        "test-bucket",
+        "test-base-path/test.jpg",
+        buffer,
+        buffer.length,
+        {
+          "Content-Type": "image/jpeg",
+          "Cache-Control": "max-age=86400"
+        }
+      );
     });
   });
 

@@ -53,6 +53,7 @@ jobs:
       S3_BUCKET: test
       S3_USE_SSL: false
       S3_STORAGE_BASE_URL: http://localhost:9090/s3mock
+      S3_DEFAULT_ACL: public-read
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
